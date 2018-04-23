@@ -19,9 +19,12 @@
 #
 #
 # created: mbiddle 20180309
-# updated: mbiddle 20180406
+# updated: mbiddle 20180423
 #
 # History:
+# 20180423:
+#   - Updated to include getting particle flux and primary production data
+#
 # 20180406: 
 #   - Updated the wget calls to explicitly get the files of interest.
 #
@@ -50,6 +53,12 @@ parser.add_option("-n", "--niskin",
 parser.add_option("-s","--summary", 
                   action="store_true", dest="summary",
                   help="To transfer the cruise summary data")
+parser.add_option("-f","--particle_flux", 
+                  action="store_true", dest="particle_flux",
+                  help="To transfer the cruise summary data")
+parser.add_option("-p","--primary_prod", 
+                  action="store_true", dest="primary_prod",
+                  help="To transfer the primary productivity data")
 (options, args) = parser.parse_args()
 
 url={}
@@ -66,6 +75,14 @@ if options.summary:
   #print "Summary option not available yet."
   url['cruise_sum']='ftp://mananui.soest.hawaii.edu/pub/hot/cruise.summaries/'
   optional['cruise_sum'] = ['-A','"hot*.sum"']
+
+if options.particle_flux:
+  url['particle_flux']='ftp://ftp.soest.hawaii.edu/dkarl/hot/particle_flux/'
+  optional['particle_flux'] = ['-A','"*.flux"']  
+
+if options.primary_prod:
+  url['primary_prod']='ftp://ftp.soest.hawaii.edu/dkarl/hot/primary_production/'
+  optional['primary_prod'] = ['-A','"*.pp"']  
 
 print "Transferring:"
 for item in url:
