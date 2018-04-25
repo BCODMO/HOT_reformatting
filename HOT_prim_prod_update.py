@@ -1,23 +1,23 @@
 #!/usr/local/bin/python
-desc='''This script uses the functions in HOT_data_extract to process the hot *.flux
+desc='''This script uses the functions in HOT_data_extract to process the hot *.pp
 data files, and reformat them into csv files for jgofs compatibility. It assumes that 
-your current working directory is the 'particle_flux/' directory. It also assumes that 
-the data file follows the convention as described in the particle_flux/Readme.flux 
-file. The headers are identified as the variable names as listed in the Readme.flux 
-file. It assumes that all the files have the same data field names. The process 
-overwrites the files specified in the -o option, if they exist.'''
+your current working directory is the 'primary_productivity/' directory. It also 
+assumes that the data file follows the convention as described in the 
+primary_productivity/Readme.pp file. The headers are identified as the variable names as listed 
+in the Readme.pp file. It assumes that all the files have the same data field names. The 
+process overwrites the data files specified in the -o option, if they exist.'''
 
 # Python packages:
 # numpy,csv,sys,pprint,OptionParser,fnmatch,os,HOT_niskin_data_extract,collections,re
 #
-# created: mbiddle 20180423
+# created: mbiddle 20180424
 # updated: mbiddle 20180425
 #
 # History:
 # 20180425:
-#   - Completed development. Operational now.
+#   - Completed development. Is operational now.
 #
-# 20180423:
+# 20180424:
 #   - Copied CTD processing script to make this
 
 vers="%prog 1.0 - Updated 20180425"
@@ -56,8 +56,8 @@ print "Current working directory:",os.getcwd()
 ## Get the files to be processed:
 #---------------------------------------------------------#
 if options.test: # subset of the data files
-  data_files = ['hot1-12.flux','hot280-288.flux']
-  readme='Readme.flux'
+  data_files = ['hot1-12.pp','hot280-288.pp']
+  readme='Readme.pp'
   import fnmatch
   import os
   sum_files=[]
@@ -77,7 +77,7 @@ else:
       sum_files.append('../cruise.summaries/'+file)
   data_files=[]
   for root, subFolders, files in os.walk('.'):
-    for filename in fnmatch.filter(files,'hot*.flux'):
+    for filename in fnmatch.filter(files,'hot*.pp'):
       data_files.append(os.path.join(root,filename).replace('./',''))
   if options.verbose:
     print "total summary file count:",len(sum_files)
@@ -85,8 +85,8 @@ else:
 #---------------------------------------------------------#
 ## Pull out all the data using the functions defined above
 cruise_sum = HOT_data_extract.process_cruise_sum(sum_files)
-data_result = HOT_data_extract.process_part_flux(data_files)#,formats) # requires formats dictionary
-#pprint.pprint(data_result)
+data_result = HOT_data_extract.process_prim_prod(data_files)#,formats) # requires formats dictionary
+#pprint.pprint(data_result['hot101-110.pp'])
 #sys.exit()
 ## Now do some post processing
 #---------------------------------------------------------#
@@ -134,26 +134,26 @@ if options.out_file:
   with open(options.out_file, 'wb') as f:
     writer = csv.writer(f, delimiter=',',lineterminator='\n')
     writer.writerow(data_combined.keys())
-    writer.writerows(zd) #will not write data if the row numbers don't match, should add a check
+    writer.writerows(zd) #will not write data if the row numbers don't match, should add a check                  
   print '\nSorting the data file for jgofs...'
   f = open(options.out_file.replace(".csv","_sorted.csv"),"w")
-  #sort -k23,23n -k6,6 -b -t, part_flux.csv > part_flux_sorted.csv
-  #sort -k91,91 -k79,79n -k8,8n -k73,73rn -b -t, niskin.csv > niskin_sorted.csv
-  subprocess.call(["sort","-k25,25n","-k6,6n","-b","-t,",options.out_file], stdout=f)
+#  #sort -k23,23n -k6,6 -b -t, part_flux.csv > part_flux_sorted.csv
+#  #sort -k91,91 -k79,79n -k8,8n -k73,73rn -b -t, niskin.csv > niskin_sorted.csv
+  subprocess.call(["sort","-k21,21n","-k9,9n","-k7,7n","-b","-t,",options.out_file], stdout=f)
   print "\nWrote",options.out_file.replace(".csv","_sorted.csv")
 
     ## Update the datacomments file
   dir_path = options.out_file.rsplit('/',1)[0]+'/'
-  print "\nUpdating",dir_path+'part_flux.datacomments'
+  print "\nUpdating",dir_path+'prim_prod.datacomments'
   import datetime
   now = datetime.datetime.now()
-  f = open(dir_path+'part_flux.datacomments','r')
+  f = open(dir_path+'prim_prod.datacomments','r')
   lines = f.readlines()
   lines[0]="\#  version: %s\n" % now.strftime("%Y-%m-%d")
   f.close()
-  f = open(dir_path+'part_flux.datacomments', 'w')
+  f = open(dir_path+'prim_prod.datacomments', 'w')
   f.writelines(lines)
  # do the remaining operations on the file
   f.close()
 
-print "\nCompleted HOT_part_flux_update.py." 
+print "\nCompleted HOT_prim_prod_update.py."                         

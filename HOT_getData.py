@@ -11,7 +11,7 @@
 # HOT_niskin_getData.py -s -c -n
 #
 # You will then transfer, recursively, all the data from the appropriate urls.
-# The data will be placed in subdriectories as identified in the url.
+# The data will be placed in subdirectories as identified in the url.
 # For example,
 # data from ftp://mananui.soest.hawaii.edu/pub/hot/ctd/
 # will all be in the directory:

@@ -9,9 +9,15 @@
 # sys
 #
 # created: mbiddle 20180306
-# updated: mbiddle 20180402
+# updated: mbiddle 20180425
 #
 # History:
+# 20180425:
+#   - Added two new functions; process_prim_prod and process_part_flux.
+#   - The two new functions allow for extracting the data from the primary productivity 
+#     and particle flux data files according to the specifications defined in the 
+#     respective Readme.(pp/flux) files.
+#
 # 20180402:
 #   - Changed file name to HOT_data_extract.py since I will add CTD processing here.
 #
@@ -94,8 +100,98 @@ def create_formats_dict(format_file):
       formats[fields]={"start":int(col_num[0])-1,"end":int(col_num[1]),"type":data_formats}
   return formats;
 
+def process_prim_prod(data_files):
+  '''## Create a dictionary for the primary productivity data files using the formats as described in Readme.pp 
+  # Accepts a list variable containing file names (relative paths are okay).
+  #
+  # explicitly parses line by line based on how the records are identified in Readme.pp
+  # No special processing, outputs a dictionary per file, per variable, with data as strings. All 
+  # information is retained and transferred via the dictionary.
+  '''
+#  import collections
+  result={}
+  data_rec1={}
+  data_rec2={}
+  data_rec3={}
+  data_rec4={}
+  for data_key in data_files:
+    datafile = open(data_key,'r') # open the file
+    filename = data_key
+    ## Process the header of the file
+    data_rec1[data_key]=datafile.readline().replace("\n","") # line 1
+    data_rec2[data_key]=datafile.readline().replace("\n","") # line 2
+    data_rec3[data_key]=datafile.readline().replace("\n","") # line 3
+    data_rec4[data_key]=datafile.readline().replace("\n","") # line 4
+    datafile.readline() #skip blank line
+    result[data_key]={}
+    result[data_key]['Prim_prod filename']=filename
+    ## Data record 1
+    result[data_key]['Title']=data_rec1[data_key]
+  
+    vars=['PrimProd_filename','Cruise','Treatment','Time','Depth',\
+          'Chl_a_mean','Chl_a_sd','Pheo_mean',\
+          'Pheo_sd','Light_rep1','Light_rep2',\
+          'Light_rep3','Dark_rep1','Dark_rep2',\
+          'Dark_rep3','Salt','Prochl','Hetero',\
+          'Synecho','Euk','Flag']
+    for var in vars:
+      result[data_key][var]={}
+   
+    ## Data record 3 Units
+#    result[data_key]['Units']=data_rec5[data_key]
+    result[data_key]['Cruise']['Units']='Number' 
+    result[data_key]['Treatment']['Units']=data_rec4[data_key][6:11]
+    result[data_key]['Time']['Units']=data_rec4[data_key][11:18]
+    result[data_key]['Depth']['Units']=data_rec4[data_key][18:23]
+    result[data_key]['Chl_a_mean']['Units']=data_rec4[data_key][24:30]
+    result[data_key]['Chl_a_sd']['Units']=data_rec4[data_key][31:37]
+    result[data_key]['Pheo_mean']['Units']=data_rec4[data_key][38:44]
+    result[data_key]['Pheo_sd']['Units']=data_rec4[data_key][45:51]
+    result[data_key]['Light_rep1']['Units']=data_rec3[data_key][52:59]
+    result[data_key]['Light_rep2']['Units']=data_rec3[data_key][60:67]
+    result[data_key]['Light_rep3']['Units']=data_rec3[data_key][68:75]
+    result[data_key]['Dark_rep1']['Units']=data_rec3[data_key][76:83]
+    result[data_key]['Dark_rep2']['Units']=data_rec3[data_key][84:91]
+    result[data_key]['Dark_rep3']['Units']=data_rec3[data_key][92:99]
+    result[data_key]['Salt']['Units']=data_rec4[data_key][100:108]
+    result[data_key]['Prochl']['Units']=data_rec4[data_key][109:116]
+    result[data_key]['Hetero']['Units']=data_rec4[data_key][117:124]
+    result[data_key]['Synecho']['Units']=data_rec4[data_key][125:132]
+    result[data_key]['Euk']['Units']=data_rec4[data_key][133:141]
+    result[data_key]['Flag']['Units']=data_rec4[data_key][142:152]
+    # initialize the 'data' dictionaries
+    for item in vars:
+       result[data_key][item]['data']=[]
+
+    ## Now go get all the data for each file
+    for line in datafile: # iterate through each data line and parse on position
+      result[data_key]['PrimProd_filename']['data'].append(filename)
+      result[data_key]['Cruise']['data'].append(line[0:5].replace("\n",""))
+      result[data_key]['Treatment']['data'].append(line[6:11].replace("\n",""))
+      result[data_key]['Time']['data'].append(line[11:18].replace("\n",""))
+      result[data_key]['Depth']['data'].append(line[18:23].replace("\n",""))
+      result[data_key]['Chl_a_mean']['data'].append(line[24:30].replace("\n",""))
+      result[data_key]['Chl_a_sd']['data'].append(line[31:37].replace("\n",""))
+      result[data_key]['Pheo_mean']['data'].append(line[38:44].replace("\n",""))
+      result[data_key]['Pheo_sd']['data'].append(line[45:51].replace("\n",""))
+      result[data_key]['Light_rep1']['data'].append(line[52:59].replace("\n",""))
+      result[data_key]['Light_rep2']['data'].append(line[60:67].replace("\n",""))
+      result[data_key]['Light_rep3']['data'].append(line[68:75].replace("\n",""))
+      result[data_key]['Dark_rep1']['data'].append(line[76:83].replace("\n",""))
+      result[data_key]['Dark_rep2']['data'].append(line[84:91].replace("\n","")) 
+      result[data_key]['Dark_rep3']['data'].append(line[92:99].replace("\n",""))
+      result[data_key]['Salt']['data'].append(line[100:108].replace("\n",""))
+      result[data_key]['Prochl']['data'].append(line[109:116].replace("\n",""))
+      result[data_key]['Hetero']['data'].append(line[117:124].replace("\n",""))
+      result[data_key]['Synecho']['data'].append(line[125:132].replace("\n",""))
+      result[data_key]['Euk']['data'].append(line[133:141].replace("\n",""))
+      result[data_key]['Flag']['data'].append(line[142:152].replace("\n",""))
+  return result;
+
+
+
 def process_part_flux(data_files):
-  '''## Create a dictionary for the ctd data files using the formats as described in Readme.flux 
+  '''## Create a dictionary for the particle flux data files using the formats as described in Readme.flux 
   # Accepts a list variable containing file names (relative paths are okay).
   #
   # explicitly parses line by line based on how the records are identified in Readme.flux
@@ -109,9 +205,7 @@ def process_part_flux(data_files):
   data_rec3={}
   for data_key in data_files:
     datafile = open(data_key,'r') # open the file
-#    print data_key
     filename = data_key
-#    data_key=data_key.split("/")[1] # make the key more readable
     ## Process the header of the file
     data_rec1[data_key]=datafile.readline().replace("\n","") # line 1
     data_rec2[data_key]=datafile.readline().replace("\n","") # line 2
@@ -121,7 +215,7 @@ def process_part_flux(data_files):
     ## Data record 1
     result[data_key]['Title']=data_rec1[data_key]
   
-    vars=['Cruise','Depth','Treatment',\
+    vars=['P_flux_filename','Cruise','Depth','Treatment',\
           'Carbon','Carbon_sd_diff','Carbon_n',\
           'Nitrogen','Nitrogen_sd_diff','Nitrogen_n',\
           'Phosphorus','Phosphorus_sd_diff','Phosphorus_n',\
@@ -161,7 +255,7 @@ def process_part_flux(data_files):
     result[data_key]['Delta_13C_n']['Units']=data_rec3[data_key][140:143]
     result[data_key]['PIC']['Units']=data_rec3[data_key][143:150]
     result[data_key]['PIC_sd_diff']['Units']=data_rec3[data_key][151:158]
-    result[data_key]['PIC_n']['Units']=data_rec3[data_key][159:161]
+    result[data_key]['PIC_n']['Units']=data_rec3[data_key][158:161]
 
     # initialize the 'data' dictionaries
     for item in vars:
@@ -169,6 +263,7 @@ def process_part_flux(data_files):
 
     ## Now go get all the data for each file
     for line in datafile: # iterate through each data line and parse on position
+      result[data_key]['P_flux_filename']['data'].append(filename)
       result[data_key]['Cruise']['data'].append(line[0:4].replace("\n",""))
       result[data_key]['Depth']['data'].append(line[8:11].replace("\n",""))
       result[data_key]['Treatment']['data'].append(line[14:15].replace("\n",""))
@@ -195,7 +290,7 @@ def process_part_flux(data_files):
       result[data_key]['Delta_13C_n']['data'].append(line[140:143].replace("\n",""))
       result[data_key]['PIC']['data'].append(line[143:150].replace("\n",""))
       result[data_key]['PIC_sd_diff']['data'].append(line[151:158].replace("\n",""))
-      result[data_key]['PIC_n']['data'].append(line[159:161].replace("\n",""))
+      result[data_key]['PIC_n']['data'].append(line[158:161].replace("\n",""))
 
   return result;
 
