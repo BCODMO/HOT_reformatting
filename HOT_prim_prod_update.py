@@ -60,33 +60,37 @@ if options.test: # subset of the data files
   readme='Readme.pp'
   import fnmatch
   import os
-  sum_files=[]
-  for file in os.listdir('../cruise.summaries/'): # still want all summary info
-    if fnmatch.fnmatch(file,'hot*.sum'):
-      sum_files.append('../cruise.summaries/'+file)
+#  sum_files=[]
+#  for file in os.listdir('../cruise.summaries/'): # still want all summary info
+#    if fnmatch.fnmatch(file,'hot*.sum'):
+#      sum_files.append('../cruise.summaries/'+file)
   if options.verbose:
     print "total data file count:",len(data_files)
-    print "total summary file count:",len(sum_files)
+#    print "total summary file count:",len(sum_files)
 else:
 ## Pull in the list of files from current working directory
   import fnmatch
   import os
-  sum_files=[]
-  for file in os.listdir('../cruise.summaries/'):
-    if fnmatch.fnmatch(file,'hot*.sum'):
-      sum_files.append('../cruise.summaries/'+file)
+#  sum_files=[]
+#  for file in os.listdir('../cruise.summaries/'):
+#    if fnmatch.fnmatch(file,'hot*.sum'):
+#      sum_files.append('../cruise.summaries/'+file)
   data_files=[]
   for root, subFolders, files in os.walk('.'):
     for filename in fnmatch.filter(files,'hot*.pp'):
       data_files.append(os.path.join(root,filename).replace('./',''))
   if options.verbose:
-    print "total summary file count:",len(sum_files)
+#    print "total summary file count:",len(sum_files)
     print "total data file count:",len(data_files)
 #---------------------------------------------------------#
 ## Pull out all the data using the functions defined above
-cruise_sum = HOT_data_extract.process_cruise_sum(sum_files)
+#cruise_sum = HOT_data_extract.process_cruise_sum(sum_files)
 data_result = HOT_data_extract.process_prim_prod(data_files)#,formats) # requires formats dictionary
-#pprint.pprint(data_result['hot101-110.pp'])
+#for file in data_result:
+#   pprint.pprint(data_result[file]['Date'])
+#   pprint.pprint(data_result[file]['Start_time'])
+#   pprint.pprint(data_result[file]['End_time'])
+#pprint.pprint(data_result)
 #sys.exit()
 ## Now do some post processing
 #---------------------------------------------------------#
@@ -137,9 +141,9 @@ if options.out_file:
     writer.writerows(zd) #will not write data if the row numbers don't match, should add a check                  
   print '\nSorting the data file for jgofs...'
   f = open(options.out_file.replace(".csv","_sorted.csv"),"w")
-#  #sort -k23,23n -k6,6 -b -t, part_flux.csv > part_flux_sorted.csv
-#  #sort -k91,91 -k79,79n -k8,8n -k73,73rn -b -t, niskin.csv > niskin_sorted.csv
-  subprocess.call(["sort","-k21,21n","-k9,9n","-k7,7n","-b","-t,",options.out_file], stdout=f)
+  #sort -k26,26n -k8,8n -b -t, ../../working/prim_prod/prim_prod.csv
+#  #sort by Cruise, start time, then depth 
+  subprocess.call(["sort","-k25,25n","-k21,21n","-k8,8n","-b","-t,",options.out_file], stdout=f)
   print "\nWrote",options.out_file.replace(".csv","_sorted.csv")
 
     ## Update the datacomments file

@@ -138,8 +138,8 @@ if options.out_file:
   print '\nSorting the data file for jgofs...'
   f = open(options.out_file.replace(".csv","_sorted.csv"),"w")
   #sort -k23,23n -k6,6 -b -t, part_flux.csv > part_flux_sorted.csv
-  #sort -k91,91 -k79,79n -k8,8n -k73,73rn -b -t, niskin.csv > niskin_sorted.csv
-  subprocess.call(["sort","-k25,25n","-k6,6n","-b","-t,",options.out_file], stdout=f)
+  #sort by date, then depth
+  subprocess.call(["sort","-k26,26n","-k8,8n","-b","-t,",options.out_file], stdout=f)
   print "\nWrote",options.out_file.replace(".csv","_sorted.csv")
 
     ## Update the datacomments file
