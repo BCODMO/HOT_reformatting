@@ -16,9 +16,12 @@ exist.'''
 # numpy,csv,sys,pprint,OptionParser,fnmatch,os,HOT_niskin_data_extract,collections,re
 #
 # created: mbiddle 20180402
-# updated: mbiddle 20180406
+# updated: mbiddle 20180524
 #
 # History:
+# 20180524:
+#   - Moved the function process_ctd from HOT_data_extract to this script.
+#
 # 20180406:
 #   - Included process for updating the data.comments file
 #
@@ -29,7 +32,7 @@ exist.'''
 # 20180402:
 #   - Initialized script from HOT_niskin_update.py
 
-vers="%prog 1.0 - Updated 20180404"
+vers="%prog 1.5 - Updated 20180524"
 #import csv # reading csv
 import sys # for testing
 import pprint # to pretty print dictionaries
@@ -58,6 +61,106 @@ def reorder_ordereddict(od, new_key_order):
     new_od = collections.OrderedDict([(k, None) for k in new_key_order if k in od])
     new_od.update(od)
     return new_od
+
+def process_ctd(data_files):
+  '''## Create a dictionary for the ctd data files using the formats as described in Readme.format 
+  # Accepts a list variable containing file names (relative paths are okay).
+  #
+  # explicitly parses line by line based on how the records are identified in Readme.format
+  # No special processing, outputs a dictionary per file, per variable, with data as strings. All 
+  # information is retained and transferred via the dictionary.
+  '''
+#  import collections
+  result={}
+  data_rec1={}
+  data_rec2={}
+  data_rec3={}
+  data_rec4={}
+  data_rec5={}
+  data_rec6={}
+  for data_key in data_files:
+    datafile = open(data_key,'r') # open the file
+    filename = data_key
+    data_key=data_key.split("/")[1] # make the key more readable
+    ## Process the header of the file
+    data_rec1[data_key]=datafile.readline().replace("\n","") # line 1
+    data_rec2[data_key]=datafile.readline().replace("\n","") # line 2
+    data_rec3[data_key]=datafile.readline().replace("\n","") # line 3
+    data_rec4[data_key]=datafile.readline().replace("\n","")
+    data_rec5[data_key]=datafile.readline().replace("\n","")
+    data_rec6[data_key]=datafile.readline().replace("\n","")
+    result[data_key]={}
+    result[data_key]['CTD filename']=filename
+
+    ## Data record 1
+    result[data_key]['EXPOCODE']=data_rec1[data_key][8:22]
+    result[data_key]['WHP station identification']=data_rec1[data_key][30:34]
+    result[data_key]['Month']=data_rec1[data_key][40:42]
+    result[data_key]['Day']=data_rec1[data_key][42:44]
+    result[data_key]['Year']=data_rec1[data_key][44:46]
+  
+    ## Data record 2
+    result[data_key]['Station number']=data_rec2[data_key][6:12]
+    result[data_key]['Cast number']=data_rec2[data_key][19:22]
+    result[data_key]['Number of data records in the file']=data_rec2[data_key][35:40]
+
+    ## Data record 3
+    result[data_key]['Instrument number']=data_rec3[data_key][15:21]
+    result[data_key]['Sampling rate']=data_rec3[data_key][36:41]
+
+    ## Data record 4, Data header
+    #result[data_key]['Header']=data_rec4[data_key]
+    result[data_key][data_rec4[data_key][0:8]]={} # Pressure
+    result[data_key][data_rec4[data_key][8:16]]={} # Temp
+    result[data_key][data_rec4[data_key][16:25]]={} # Sal
+    result[data_key][data_rec4[data_key][25:33]]={} # Oxy
+    result[data_key][data_rec4[data_key][34:41]]={} # transmis/nitr
+    result[data_key][data_rec4[data_key][41:49]]={} # Chloropigments
+    result[data_key][data_rec4[data_key][49:57]]={} # Obs
+    result[data_key][data_rec4[data_key][57:65]]={} # Qual
+    vars=[data_rec4[data_key][0:8],data_rec4[data_key][8:16],\
+          data_rec4[data_key][16:25],data_rec4[data_key][25:33],\
+          data_rec4[data_key][34:41],data_rec4[data_key][41:49],\
+          data_rec4[data_key][49:57],data_rec4[data_key][57:65]]
+
+    ## Data record 5 Units
+#    result[data_key]['Units']=data_rec5[data_key]
+    result[data_key][data_rec4[data_key][0:8]]['Units']=data_rec5[data_key][0:8]   
+    result[data_key][data_rec4[data_key][8:16]]['Units']=data_rec5[data_key][8:16]
+    result[data_key][data_rec4[data_key][16:25]]['Units']=data_rec5[data_key][16:25]
+    result[data_key][data_rec4[data_key][25:33]]['Units']=data_rec5[data_key][25:33]
+    result[data_key][data_rec4[data_key][34:41]]['Units']=data_rec5[data_key][34:41]
+    result[data_key][data_rec4[data_key][41:49]]['Units']=data_rec5[data_key][41:49]
+    result[data_key][data_rec4[data_key][49:57]]['Units']=data_rec5[data_key][49:57]
+    result[data_key][data_rec4[data_key][57:65]]['Units']=data_rec5[data_key][57:65]
+
+    ## Data record 6: Quality byte
+#    result[data_key]['Quality byte']=data_rec6[data_key]
+    result[data_key][data_rec4[data_key][0:8]]['Quality byte']=data_rec6[data_key][0:8]
+    result[data_key][data_rec4[data_key][8:16]]['Quality byte']=data_rec6[data_key][8:16]
+    result[data_key][data_rec4[data_key][16:25]]['Quality byte']=data_rec6[data_key][16:25]
+    result[data_key][data_rec4[data_key][25:33]]['Quality byte']=data_rec6[data_key][25:33]
+    result[data_key][data_rec4[data_key][34:41]]['Quality byte']=data_rec6[data_key][34:41]
+    result[data_key][data_rec4[data_key][41:49]]['Quality byte']=data_rec6[data_key][41:49]
+    result[data_key][data_rec4[data_key][49:57]]['Quality byte']=data_rec6[data_key][49:57]
+    result[data_key][data_rec4[data_key][57:65]]['Quality byte']=data_rec6[data_key][57:65]
+
+    # initialize the 'data' dictionaries
+    for item in vars:
+       result[data_key][item]['data']=[]
+
+    ## Now go get all the data for each file
+    for line in datafile: # iterate through each data line and parse on position
+      result[data_key][data_rec4[data_key][0:8]]['data'].append(line[0:8].replace("\n",""))
+      result[data_key][data_rec4[data_key][8:16]]['data'].append(line[8:16].replace("\n",""))
+      result[data_key][data_rec4[data_key][16:25]]['data'].append(line[16:25].replace("\n",""))
+      result[data_key][data_rec4[data_key][25:33]]['data'].append(line[25:33].replace("\n",""))
+      result[data_key][data_rec4[data_key][34:41]]['data'].append(line[34:41].replace("\n",""))
+      result[data_key][data_rec4[data_key][41:49]]['data'].append(line[41:49].replace("\n",""))
+      result[data_key][data_rec4[data_key][49:57]]['data'].append(line[49:57].replace("\n",""))
+      result[data_key][data_rec4[data_key][57:65]]['data'].append(line[57:65].replace("\n",""))
+
+  return result;
 
 ## Print current working directory
 print "Current working directory:",os.getcwd()
@@ -95,7 +198,7 @@ else:
 
 ## Pull out all the data using the functions defined above
 cruise_sum = HOT_data_extract.process_cruise_sum(sum_files)
-data_result = HOT_data_extract.process_ctd(data_files)#,formats) # requires formats dictionary
+data_result = process_ctd(data_files)
 
 ## Now do some post processing
 #---------------------------------------------------------#
