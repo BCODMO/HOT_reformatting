@@ -11,16 +11,20 @@ overwrites the files specified in the -o option, if they exist.'''
 # numpy,csv,sys,pprint,OptionParser,fnmatch,os,HOT_niskin_data_extract,collections,re
 #
 # created: mbiddle 20180423
-# updated: mbiddle 20180425
+# updated: mbiddle 20180524
 #
 # History:
+# 20180524:
+#   - Integrated the function 'process_part_flux' from HOT_data_extract into this script.
+#   - Sorting was fixed to sort by cruise, then depth.
+#
 # 20180425:
 #   - Completed development. Operational now.
 #
 # 20180423:
 #   - Copied CTD processing script to make this
 
-vers="%prog 1.0 - Updated 20180425"
+vers="%prog 1.5 - Updated 20180524"
 #import csv # reading csv
 import sys # for testing
 import pprint # to pretty print dictionaries
@@ -50,6 +54,110 @@ def reorder_ordereddict(od, new_key_order):
     new_od.update(od)
     return new_od
 
+def process_part_flux(data_files):
+  '''## Create a dictionary for the particle flux data files using the formats as described in Readme.flux 
+  # Accepts a list variable containing file names (relative paths are okay).
+  #
+  # explicitly parses line by line based on how the records are identified in Readme.flux
+  # No special processing, outputs a dictionary per file, per variable, with data as strings. All 
+  # information is retained and transferred via the dictionary.
+  '''
+#  import collections
+  result={}
+  data_rec1={}
+  data_rec2={}
+  data_rec3={}
+  for data_key in data_files:
+    datafile = open(data_key,'r') # open the file
+    filename = data_key
+    ## Process the header of the file
+    data_rec1[data_key]=datafile.readline().replace("\n","") # line 1
+    data_rec2[data_key]=datafile.readline().replace("\n","") # line 2
+    data_rec3[data_key]=datafile.readline().replace("\n","") # line 3
+    result[data_key]={}
+    result[data_key]['P_flux filename']=filename
+    ## Data record 1
+    result[data_key]['Title']=data_rec1[data_key]
+  
+    vars=['P_flux_filename','Cruise','Depth','Treatment',\
+          'Carbon','Carbon_sd_diff','Carbon_n',\
+          'Nitrogen','Nitrogen_sd_diff','Nitrogen_n',\
+          'Phosphorus','Phosphorus_sd_diff','Phosphorus_n',\
+          'Mass','Mass_sd_diff','Mass_n',\
+          'Silica','Silica_sd_diff','Silica_n',\
+          'Delta_15N','Delta_15N_sd_diff','Delta_15N_n',\
+          'Delta_13C','Delta_13C_sd_diff','Delta_13C_n',\
+          'PIC','PIC_sd_diff','PIC_n']
+    for var in vars:
+      result[data_key][var]={}
+   
+    ## Data record 3 Units
+#    result[data_key]['Units']=data_rec5[data_key]
+    result[data_key]['Cruise']['Units']='Number' 
+    result[data_key]['Depth']['Units']='Meters'
+    result[data_key]['Treatment']['Units']=data_rec3[data_key][13:16]
+    result[data_key]['Carbon']['Units']=data_rec3[data_key][17:24]
+    result[data_key]['Carbon_sd_diff']['Units']=data_rec3[data_key][25:32]
+    result[data_key]['Carbon_n']['Units']=data_rec3[data_key][32:35]
+    result[data_key]['Nitrogen']['Units']=data_rec3[data_key][35:42]
+    result[data_key]['Nitrogen_sd_diff']['Units']=data_rec3[data_key][43:50]
+    result[data_key]['Nitrogen_n']['Units']=data_rec3[data_key][51:52]
+    result[data_key]['Phosphorus']['Units']=data_rec3[data_key][53:60]
+    result[data_key]['Phosphorus_sd_diff']['Units']=data_rec3[data_key][61:68]
+    result[data_key]['Phosphorus_n']['Units']=data_rec3[data_key][68:71]
+    result[data_key]['Mass']['Units']=data_rec3[data_key][71:78]
+    result[data_key]['Mass_sd_diff']['Units']=data_rec3[data_key][78:86]
+    result[data_key]['Mass_n']['Units']=data_rec3[data_key][86:89]
+    result[data_key]['Silica']['Units']=data_rec3[data_key][89:96]
+    result[data_key]['Silica_sd_diff']['Units']=data_rec3[data_key][97:104]
+    result[data_key]['Silica_n']['Units']=data_rec3[data_key][104:107]
+    result[data_key]['Delta_15N']['Units']=data_rec3[data_key][107:114]
+    result[data_key]['Delta_15N_sd_diff']['Units']=data_rec3[data_key][115:122]
+    result[data_key]['Delta_15N_n']['Units']=data_rec3[data_key][122:125]
+    result[data_key]['Delta_13C']['Units']=data_rec3[data_key][125:132]
+    result[data_key]['Delta_13C_sd_diff']['Units']=data_rec3[data_key][133:140]
+    result[data_key]['Delta_13C_n']['Units']=data_rec3[data_key][140:143]
+    result[data_key]['PIC']['Units']=data_rec3[data_key][143:150]
+    result[data_key]['PIC_sd_diff']['Units']=data_rec3[data_key][151:158]
+    result[data_key]['PIC_n']['Units']=data_rec3[data_key][158:161]
+
+    # initialize the 'data' dictionaries
+    for item in vars:
+       result[data_key][item]['data']=[]
+
+    ## Now go get all the data for each file
+    for line in datafile: # iterate through each data line and parse on position
+      result[data_key]['P_flux_filename']['data'].append(filename)
+      result[data_key]['Cruise']['data'].append(line[0:4].replace("\n",""))
+      result[data_key]['Depth']['data'].append(line[8:11].replace("\n",""))
+      result[data_key]['Treatment']['data'].append(line[14:15].replace("\n",""))
+      result[data_key]['Carbon']['data'].append(line[18:23].replace("\n",""))
+      result[data_key]['Carbon_sd_diff']['data'].append(line[25:32].replace("\n",""))
+      result[data_key]['Carbon_n']['data'].append(line[32:35].replace("\n",""))
+      result[data_key]['Nitrogen']['data'].append(line[35:42].replace("\n",""))
+      result[data_key]['Nitrogen_sd_diff']['data'].append(line[43:50].replace("\n",""))
+      result[data_key]['Nitrogen_n']['data'].append(line[51:52].replace("\n",""))
+      result[data_key]['Phosphorus']['data'].append(line[53:60].replace("\n",""))
+      result[data_key]['Phosphorus_sd_diff']['data'].append(line[61:68].replace("\n",""))
+      result[data_key]['Phosphorus_n']['data'].append(line[68:71].replace("\n",""))
+      result[data_key]['Mass']['data'].append(line[71:78].replace("\n",""))
+      result[data_key]['Mass_sd_diff']['data'].append(line[78:86].replace("\n",""))
+      result[data_key]['Mass_n']['data'].append(line[86:89].replace("\n",""))
+      result[data_key]['Silica']['data'].append(line[89:96].replace("\n",""))
+      result[data_key]['Silica_sd_diff']['data'].append(line[97:104].replace("\n",""))
+      result[data_key]['Silica_n']['data'].append(line[104:107].replace("\n",""))
+      result[data_key]['Delta_15N']['data'].append(line[107:114].replace("\n",""))
+      result[data_key]['Delta_15N_sd_diff']['data'].append(line[115:122].replace("\n",""))
+      result[data_key]['Delta_15N_n']['data'].append(line[122:125].replace("\n",""))
+      result[data_key]['Delta_13C']['data'].append(line[125:132].replace("\n",""))
+      result[data_key]['Delta_13C_sd_diff']['data'].append(line[133:140].replace("\n",""))
+      result[data_key]['Delta_13C_n']['data'].append(line[140:143].replace("\n",""))
+      result[data_key]['PIC']['data'].append(line[143:150].replace("\n",""))
+      result[data_key]['PIC_sd_diff']['data'].append(line[151:158].replace("\n",""))
+      result[data_key]['PIC_n']['data'].append(line[158:161].replace("\n",""))
+
+  return result;
+
 ## Print current working directory
 print "Current working directory:",os.getcwd()
 
@@ -60,34 +168,22 @@ if options.test: # subset of the data files
   readme='Readme.flux'
   import fnmatch
   import os
-  sum_files=[]
-  for file in os.listdir('../cruise.summaries/'): # still want all summary info
-    if fnmatch.fnmatch(file,'hot*.sum'):
-      sum_files.append('../cruise.summaries/'+file)
   if options.verbose:
     print "total data file count:",len(data_files)
-    print "total summary file count:",len(sum_files)
 else:
 ## Pull in the list of files from current working directory
   import fnmatch
   import os
-  sum_files=[]
-  for file in os.listdir('../cruise.summaries/'):
-    if fnmatch.fnmatch(file,'hot*.sum'):
-      sum_files.append('../cruise.summaries/'+file)
   data_files=[]
   for root, subFolders, files in os.walk('.'):
     for filename in fnmatch.filter(files,'hot*.flux'):
       data_files.append(os.path.join(root,filename).replace('./',''))
   if options.verbose:
-    print "total summary file count:",len(sum_files)
     print "total data file count:",len(data_files)
 #---------------------------------------------------------#
 ## Pull out all the data using the functions defined above
-cruise_sum = HOT_data_extract.process_cruise_sum(sum_files)
-data_result = HOT_data_extract.process_part_flux(data_files)#,formats) # requires formats dictionary
-#pprint.pprint(data_result)
-#sys.exit()
+data_result = process_part_flux(data_files)
+
 ## Now do some post processing
 #---------------------------------------------------------#
 if options.verbose:
@@ -121,11 +217,11 @@ for file_data in data_result: # iterate through data dictionary for each file
         data_combined.update({var.replace(" ","_"):data_result[file_data][var]["data"]})
       else: # otherwise append the data to it
         data_combined[var.replace(" ","_")].extend(data_result[file_data][var]["data"])
+
 ## Add latitude and longitude coordinates
 data_combined.update({'lon':[-158.00] * len(data_combined[var],)})
 data_combined.update({'lat':[22.75] * len(data_combined[var],)})
 
-#sys.exit()
 if options.out_file:
   ## write out the data to ../HOT_niskin.csv
   print "\nWriting to",options.out_file
@@ -139,10 +235,10 @@ if options.out_file:
   f = open(options.out_file.replace(".csv","_sorted.csv"),"w")
   #sort -k23,23n -k6,6 -b -t, part_flux.csv > part_flux_sorted.csv
   #sort by date, then depth
-  subprocess.call(["sort","-k26,26n","-k8,8n","-b","-t,",options.out_file], stdout=f)
+  subprocess.call(["sort","-k25,25n","-k6,6n","-b","-t,",options.out_file], stdout=f)
   print "\nWrote",options.out_file.replace(".csv","_sorted.csv")
 
-    ## Update the datacomments file
+  ## Update the datacomments file
   dir_path = options.out_file.rsplit('/',1)[0]+'/'
   print "\nUpdating",dir_path+'part_flux.datacomments'
   import datetime
@@ -153,7 +249,6 @@ if options.out_file:
   f.close()
   f = open(dir_path+'part_flux.datacomments', 'w')
   f.writelines(lines)
- # do the remaining operations on the file
   f.close()
 
 print "\nCompleted HOT_part_flux_update.py." 
