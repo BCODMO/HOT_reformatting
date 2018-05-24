@@ -1,5 +1,5 @@
 #!/usr/local/bin/python
-desc='''This script uses the functions in HOT_data_extract to process the hot *.ctd
+desc='''This script uses the functions in HOT_functions to process the hot *.ctd
 data files, and reformat them into csv files for jgofs compatibility. It assumes that 
 your current working directory is the ctd 'ctd/' directory and you have the 
 cruise.summary files in a directory '../cruise.summaries/' relative to the 'ctd/' 
@@ -37,7 +37,7 @@ vers="%prog 1.5 - Updated 20180524"
 import sys # for testing
 import pprint # to pretty print dictionaries
 from optparse import OptionParser # create options for script
-import HOT_data_extract # processing the data files functions
+import HOT_functions # processing the data files functions
 import collections # to keep dictionaries organized
 import re # regular expressions
 import os # operating system
@@ -197,7 +197,7 @@ else:
 #---------------------------------------------------------#
 
 ## Pull out all the data using the functions defined above
-cruise_sum = HOT_data_extract.process_cruise_sum(sum_files)
+cruise_sum = HOT_functions.process_cruise_sum(sum_files)
 data_result = process_ctd(data_files)
 
 ## Now do some post processing

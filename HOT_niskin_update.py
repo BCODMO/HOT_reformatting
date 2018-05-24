@@ -1,5 +1,5 @@
 #!/usr/local/bin/python
-desc='''This script uses the functions in HOT_data_extract to process the HOT.gof
+desc='''This script uses the functions in HOT_functions to process the HOT.gof
 data files, combine them with the appropriate cruise information, and export it as one
 large csv. It assumes that your current working directory is the niskin 'water/' directory
 and you have the cruise.summary files in a directory '../cruise.summaries/' relative to
@@ -16,9 +16,12 @@ find to the terminal window.'''
 # numpy,csv,sys,pprint,OptionParser,fnmatch,os,HOT_niskin_data_extract,collections,re
 #
 # created: mbiddle 20180320
-# updated: mbiddle 20180406
+# updated: mbiddle 20180524
 #
 # History:
+# 20180524:
+#   - Updated to move the process_niskin function from HOT_data_extract to this script.
+#
 # 20180406:
 #   - Updated to include writing of niskin.datacomments
 # 
@@ -46,12 +49,12 @@ find to the terminal window.'''
 # 20180320:
 #   - Pulled the processing of the data out from the function definitions to simplify processing.
 
-vers="%prog 1.2 - Updated 20180406"
+vers="%prog 1.2 - Updated 20180524"
 #import csv # reading csv
 import sys # for testing
 #import pprint # to pretty print dictionaries
 from optparse import OptionParser # create options for script
-import HOT_data_extract # processing the data files functions
+import HOT_functions # processing the data files functions
 import collections # to keep dictionaries organized
 import re # regular expressions
 import os # operating system
@@ -70,6 +73,163 @@ parser.add_option("-o","--out_file",
                   dest="out_file",metavar="FILE",
                   help="write data to FILE")
 (options, args) = parser.parse_args()
+
+def create_formats_dict(format_file):
+  '''## Create a dictionary that defines the data formatting from the 
+  # Readme.water.jgof Data Record Format section.
+  #
+  #Data Record Format: 
+  #        Column  Format  Item
+  #          1-  8   i6    Station Number
+  #          9- 16   i3    Cast Number
+  #
+  #
+  # Column indicates the position in the line where the data is found
+  # Format indicates the formatting of that item
+  # Item indicates what the name of that field is
+  #
+  '''
+  formats = {}
+  with open(format_file,'rb') as formatfile:
+    for line in formatfile:
+      if "Column  Format" in line.strip(): # start reading at this line
+        break
+    for line in formatfile:
+      # since the format file is not consistant, we have to do some search and replace for
+      # spaces and ^I (tab) seperators. 
+      line = line.replace('       ',' ')  
+      col_num = line.replace('        ',' ').replace('    ','')[0:9].strip().split("-")
+      datatype=line.replace('        ',' ').replace('       ',' ')\
+          .replace('    ','').replace('    ','       ')[8:13].strip()[0]
+      datalength=line.replace('        ',' ').replace('       ',' ')\
+          .replace('    ','').replace('    ','       ')[8:13].strip()[1:]
+      data_formats= "%s%s" % (datalength,datatype)
+      fields = line.replace('        ',' ').replace('       ',' ')\
+          .replace('    ','').replace('    ','       ')[14:].strip()
+      # create the dictionary to be used later. 
+      # dictionary looks like:
+      # formats['Station Number'] = {'start':1,'end':8,'type':i6} 
+      # since python indexing is odd, we need to start at 1 minus the identified column
+      # number in the format. 
+      formats[fields]={"start":int(col_num[0])-1,"end":int(col_num[1]),"type":data_formats}
+  return formats;
+
+def process_niskin(data_files,formats):
+  '''## This function process the data files provided in [data_files] according to the
+  # formats identified in [formats] and outputs the data into a dictionary structure.
+  #
+  ## Data is written into a dictionary under the following structure:
+  # result[FILE][VAR]['data']
+  # where,
+  # FILE is the file name.
+  # VAR is the short variable name provided in the data file.
+  #
+  # There are also dictionaries extracted from the headers of the data files.
+  # Those are at the result[FILE] level and have the following names:
+  # 
+  # "expo_code"
+  # "whp_id"
+  # "cruise_start"
+  # "cruise_end"
+  #
+  # To print all the "FUCO" data from the hot1.gof data file
+  # you would use the following call:
+  #
+  # for data_point in result['hot1.gof']['FUCO']['data']:
+  #   print data_point
+  #
+  '''
+  ## Initialize a bunch of dictionaries
+  cruise_info={}
+  field_names={}
+  units={}
+  quality_flag={}
+  empty_line={}
+  long_name={}
+  short_names={}
+  short_fmt={}
+  flag={}
+  result={}
+  ident=[]
+  for df_key in data_files: # loop through each file
+    datafile = open(df_key,'r') # open the file
+    ident=[] # for every file, reset the identity list
+    ## Collect header information first 5 lines
+    cruise_info[df_key] = [datafile.readline()]
+    field_names[df_key] = datafile.readline()
+    units[df_key] = datafile.readline()
+    quality_flag[df_key] = datafile.readline()
+    empty_line[df_key] = datafile.readline()
+    ## exchange the dictionary keys with the short ones from the files
+    # this is a python remapping effort to simplify the keys
+    short_names[df_key]={}
+    long_name[df_key]={}
+    for key in formats:
+      short_names[df_key][key]=field_names[df_key][int(formats[key]["start"]):int(formats[key]["end"])].strip()
+      # extract out the short field names from the data file itself.
+    short_fmt[df_key]={}
+    # create a new dictionary for the format with the new short names
+    # populates it with the format information from the formatfile identified above
+    # [start and end position and data format].
+    for k,v in short_names[df_key].items():
+      short_fmt[df_key][v]=formats[k]
+      # save the full string name in a long_name attribute
+      short_fmt[df_key][v]["long_name"]=str(k)
+     
+    flag[df_key]={}
+    for key in short_fmt[df_key]: # parse through each format descriptor in formats to get flags
+      # do some special processing for the lone * at the end of the flag line
+      if quality_flag[df_key]\
+      [int(short_fmt[df_key][key]["start"]):int(short_fmt[df_key][key]["end"])].strip()\
+      is not "*":
+        flag[df_key][key]=quality_flag[df_key]\
+        [int(short_fmt[df_key][key]["start"]):int(short_fmt[df_key][key]["end"])]
+      else:
+        flag[df_key][key]=quality_flag[df_key]\
+        [int(short_fmt[df_key][key]["start"]):int(short_fmt[df_key][key]["end"])].replace("*"," ")
+
+    # initialize final structure with header information
+    result[df_key]={"expo_code":str(cruise_info[df_key]).split(" ")[1]}
+    result[df_key]["whp_id"]=str(cruise_info[df_key]).split(" ")[6]
+    result[df_key]["cruise_start"]=str(cruise_info[df_key]).split(" ")[12]
+    result[df_key]["cruise_end"]=str(cruise_info[df_key]).split(" ")[14]
+
+    ## parse the data now, using the formats identified above.
+    # iterate through each line of data file
+    for line in datafile:
+      # parse through each format descriptor in formats
+      for key in short_fmt[df_key]:
+        # get the data from the line and format it as they described
+        # quick and dirty bash line: "cut -c 249-256 hot1.gof"
+        # data = eval(line[int(short_fmt[key]["start"]):int(short_fmt[key]["end"])].format(short_fmt[key]["type"]))
+        # print out raw line for error checking
+        data =\
+        line[int(short_fmt[df_key][key]["start"]):int(short_fmt[df_key][key]["end"])]
+        if key == "STNNBR" or key == "CASTNO":
+          if key == "CASTNO":
+            castno = data.strip() # pull out the cast number
+          if key == "STNNBR":
+            stnbr = data.strip() # pull out the station number
+        if "stnbr" in locals() and "castno" in locals():
+          ident.append(str(cruise_info[df_key]).split(" ")[1]+"."+stnbr+"."+castno) # create the ident key
+          result[df_key]["ident"]= {"data": ident} # write the list to the dictionary
+          del stnbr # reset the variable
+          del castno # reset the variable
+        # check if the key exists in the dictionary
+        if key not in result[df_key].keys():
+        # if not, initialize the dictionary
+          result[df_key][key]={
+            "long_name":short_fmt[df_key][key]["long_name"],
+            "data":[data],
+            "flag":flag[df_key][key],
+            "start":int(short_fmt[df_key][key]["start"]),
+            "end":int(short_fmt[df_key][key]["end"]),
+            "format":short_fmt[df_key][key]["type"]}
+        else:
+      # if the dict exists, append the data to it
+          result[df_key][key]["data"].append(data)
+    datafile.close()
+  return result;
 
 ## Print current working directory
 print "Current working directory:",os.getcwd()
@@ -107,9 +267,9 @@ else:
 #---------------------------------------------------------#
 
 ## Pull out all the data using the functions defined above
-formats = HOT_data_extract.create_formats_dict(readme)
-cruise_sum = HOT_data_extract.process_cruise_sum(sum_files)
-data_result = HOT_data_extract.process_niskin(data_files,formats) # requires formats dictionary
+formats = create_formats_dict(readme)
+cruise_sum = HOT_functions.process_cruise_sum(sum_files)
+data_result = process_niskin(data_files,formats) # requires formats dictionary
 
 ## Now do some post processing
 #---------------------------------------------------------#

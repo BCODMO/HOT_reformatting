@@ -1,11 +1,11 @@
 #!/usr/local/bin/python
-desc='''This script uses the functions in HOT_data_extract to process the hot *.flux
-data files, and reformat them into csv files for jgofs compatibility. It assumes that 
-your current working directory is the 'particle_flux/' directory. It also assumes that 
-the data file follows the convention as described in the particle_flux/Readme.flux 
-file. The headers are identified as the variable names as listed in the Readme.flux 
-file. It assumes that all the files have the same data field names. The process 
-overwrites the files specified in the -o option, if they exist.'''
+desc='''This script processes the hot *.flux data files, and reformat them into csv 
+files for jgofs compatibility. It assumes that your current working directory is the 
+'particle_flux/' directory. It also assumes that the data file follows the convention 
+as described in the particle_flux/Readme.flux file. The headers are identified as the 
+variable names as listed in the Readme.flux file. It assumes that all the files have 
+the same data field names. The process overwrites the files specified in the -o 
+option, if they exist.'''
 
 # Python packages:
 # numpy,csv,sys,pprint,OptionParser,fnmatch,os,HOT_niskin_data_extract,collections,re
@@ -29,7 +29,6 @@ vers="%prog 1.5 - Updated 20180524"
 import sys # for testing
 import pprint # to pretty print dictionaries
 from optparse import OptionParser # create options for script
-import HOT_data_extract # processing the data files functions
 import collections # to keep dictionaries organized
 import re # regular expressions
 import os # operating system
